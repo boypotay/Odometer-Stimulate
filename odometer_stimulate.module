@@ -1,0 +1,226 @@
+<?php
+/**
+ * @file
+ * Code for the Odometer Stimulate
+ */
+
+/**
+ * Implements hook_block_info().
+ */
+function odometer_stimulate_block_info() {
+  $blocks['odometer_stimulate'] = array(
+    'info' => t('Odometer Stimulate'),
+  );
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function odometer_stimulate_block_view($delta = '') {
+  $block = array();
+  switch ($delta) {
+    case 'odometer_stimulate':
+      //$block['subject'] = t('Odometer Stimulate');
+      $block['content'] = array(
+        '#markup' => odometer_stimulate_render_content(),
+        '#attached' => array(
+            'css' => array(
+              drupal_get_path('module', 'odometer_stimulate') . '/css/countable.css',
+            ),
+            'js' => array(
+              drupal_get_path('module', 'odometer_stimulate') . '/js/countable.js',
+          ),
+        ),
+      );
+      break;
+  }
+  return $block;
+}
+
+/**
+ * Implements hook_block_configure().
+ */
+function odometer_stimulate_block_configure($delta = '') {
+  $form = array();
+  if ($delta == 'odometer_stimulate') {
+    // Start Values
+    $form['odometer_stimulate_start_number'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Start Number'),
+      '#default_value' => variable_get('odometer_stimulate_start_number', 0),
+      '#required' => TRUE,
+      '#element_validate' => array('odometer_stimulate_validate_number'),
+      '#description' => t('Please input number'),
+    );
+
+    $start = date("n j Y", variable_get('odometer_stimulate_start_date', 0));
+    $start = explode(' ', $start);
+    $form['odometer_stimulate_start_date'] = array(
+      '#type' => 'date',
+      '#title' => t('Start Date'),
+      '#default_value' =>  array('year' => $start[2], 'month' => $start[0], 'day' => $start[1]),
+      '#description' => t('Please input start date'),
+      '#required' => TRUE
+    );
+    // End values
+    $form['odometer_stimulate_end_number'] = array(
+      '#type' => 'textfield',
+      '#title' => t('End Number'),
+      '#default_value' => variable_get('odometer_stimulate_end_number', 0),
+      '#required' => TRUE,
+      '#element_validate' => array('odometer_stimulate_validate_end_number'),
+      '#description' => t('Please input number'),
+    );
+    $end = date("n j Y", variable_get('odometer_stimulate_end_date', 0));
+    $end = explode(' ', $end);
+    $form['odometer_stimulate_end_date'] = array(
+      '#type' => 'date',
+      '#title' => t('End Date'),
+      '#default_value' => array('year' => $end[2], 'month' => $end[0], 'day' => $end[1]),
+      '#description' => t('Please input end date'),
+      '#required' => TRUE
+    );
+  }
+  return $form;
+}
+
+/**
+ * Implements hook_block_save().
+ */
+function odometer_stimulate_block_save($delta = '', $edit = array()) {
+  if ($delta == 'odometer_stimulate') {
+    variable_set('odometer_stimulate_start_number', $edit['odometer_stimulate_start_number']);
+    variable_set('odometer_stimulate_start_date', mktime(0, 0, 0, $edit['odometer_stimulate_start_date']['month'], $edit['odometer_stimulate_start_date']['day'], $edit['odometer_stimulate_start_date']['year']));
+    variable_set('odometer_stimulate_end_number', $edit['odometer_stimulate_end_number']);
+    variable_set('odometer_stimulate_end_date', mktime(0, 0, 0, $edit['odometer_stimulate_end_date']['month'], $edit['odometer_stimulate_end_date']['day'], $edit['odometer_stimulate_end_date']['year']));
+  }
+}
+
+/**
+ * Validate number
+ */
+function odometer_stimulate_validate_number($element) {
+  if (($element['#value'] != '') && (!is_numeric($element['#value']))) {
+    form_set_error('odometer_stimulate_start_number', t('Start value must be a number'));
+  }
+}
+
+/**
+ * Validate number
+ */
+function odometer_stimulate_validate_end_number($element) {
+  if (($element['#value'] != '') && (!is_numeric($element['#value']))) {
+    form_set_error('odometer_stimulate_end_number', t('End value must be a number'));
+  }
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function odometer_stimulate_render_content() {
+  $dates = odometer_stimulate_get_updatable_counter();
+  $digits = str_split($dates['digits']);
+  $output = '';
+  kpr($dates);
+  if($dates['ok']) {
+    $output .= '<div class="lives-changed">';
+    $output .= '<span class="counter">';
+    foreach ($digits as $key => $value) {
+      if ($value == ',') {
+        $output .= '<span class="separator">,</span>';
+      } else {
+        $output .= '<div class="digit" style="position:relative;">
+          <span style="position:absolute;">' . $value . '</span></div>';
+      }
+    }
+    $output .= '</span> lives changed... one job at a time!';
+    $output .= '<span class="timer" style="display:none;">' . $dates['from'] . '</span>';
+    $output .= '</div>';
+  } else {
+    $output .= '<div class="lives-changed">';
+    $output .= '<span class="counter">';
+    foreach ($digits as $key => $value) {
+      if ($value == ',') {
+        $output .= '<span class="separator">,</span>';
+      } else {
+        $output .= '<div class="digit" style="position:relative;">
+          <span style="position:absolute;">' . $value . '</span></div>';
+      }
+    }
+    $output .= '</span> lives changed... one job at a time!';
+    $output .= '</div>';
+  }
+  return $output;
+}
+
+/**
+ * Return updatable counter
+ * http://jsfiddle.net/YWn9t/
+ * http://johnmclaughlin.info/introducing-jcount-a-jquery-countup-plugin-with-output-number-formatting/
+ */
+function odometer_stimulate_get_updatable_counter() {
+  $time = REQUEST_TIME;
+  $start_number = variable_get('odometer_stimulate_start_number', 0);
+  $start_date = variable_get('odometer_stimulate_start_date', 0);
+
+  $end_number = variable_get('odometer_stimulate_end_number', 0);
+  $end_date = variable_get('odometer_stimulate_end_date', 0);
+
+  $dates = array();
+
+  // Get from to value
+  if($start_number > $end_number) {
+    $dates['from'] = (int)$end_number;
+    $dates['to'] = (int)$start_number;
+  } else {
+    $dates['from'] = (int)$start_number;
+    $dates['to'] = (int)$end_number;
+  }
+  // Get start end date
+  if($start_date > $end_date) {
+    $dates['start'] = (int)$end_date;
+    $dates['end'] = (int)$start_date;
+  } else {
+    $dates['start'] = (int)$start_date;
+    $dates['end'] = (int)$end_date;
+  }
+  $dates['orifrom'] = $dates['from'];
+  $dates['orispeed'] = ($dates['end'] - $dates['start'])*1000;
+  $dates['ok'] = 1;
+
+  // Recheck all values
+  if(!empty($dates) && $dates['ok']) {
+    if($dates['from'] == $dates['to']) {
+      $dates['ok'] = 0;
+    } else {
+      if($dates['start'] <= $time && $time < $dates['end']) {
+        // Recalculate the from value and start value
+        $increment = 1;
+        $speed = $time - $dates['start'];
+        for ($i = 1; $i <= $speed; $i++) {
+          $dates['from'] += $increment;
+          if($dates['from'] == $dates['to']) {
+            $dates['from'] = $dates['orifrom'];
+          }
+        }
+        $dates['start'] = $time;
+      } else {
+        $dates['ok'] = 0;
+      }
+    }
+    // Calculate the speed
+    $dates['speed'] = ($dates['end'] - $dates['start'])*1000;
+    $dates['digits'] = number_format($dates['from'], 0, '.',',');
+  }
+
+  drupal_add_js(array('odometer_stimulate' => array('countable_values' => $dates)), 'setting');
+  if($dates['ok']) {
+    return $dates;
+  } else {
+    if(isset($dates['from']) && isset($dates['to']) && ($time > $dates['end'])) {
+      $dates['digits'] = number_format($dates['to'], 0, '.',',');
+    }
+    return $dates;
+  }
+}

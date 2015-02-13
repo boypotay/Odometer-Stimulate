@@ -1,0 +1,31 @@
+.block--odometer-stimulate .lives-changed .counter .digit span {
+  background: #E4E4E4;
+  display: block;
+  color: #004f5a;
+  font-family: "brandon-grotesque", helvetica, arial, sans-serif;
+  font-weight: 300;
+  width: 17px;
+  text-align: center;
+}
+
+.block--odometer-stimulate .lives-changed .counter {
+  display: block;
+  height: 26px;
+  overflow: hidden;
+  margin-right: 10px;
+  float: left;
+}
+
+.block--odometer-stimulate .lives-changed .counter .digit {
+  height: 26px;
+  width: 17px;
+}
+
+.block--odometer-stimulate .lives-changed .counter .digit, .block--odometer-stimulate .lives-changed .counter .separator {
+  float: left;
+  margin: 0 1px;
+}
+
+.block--odometer-stimulate .lives-changed {
+  margin-bottom: 10px;
+}
