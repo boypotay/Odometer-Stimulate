@@ -122,7 +122,6 @@ function odometer_stimulate_render_content() {
   $dates = odometer_stimulate_get_updatable_counter();
   $digits = str_split($dates['digits']);
   $output = '';
-  kpr($dates);
   if($dates['ok']) {
     $output .= '<div class="lives-changed">';
     $output .= '<span class="counter">';
